@@ -23,6 +23,8 @@ export const MapPaths = [
 export const MapHelp = {
     "tutorial-attack-the-towers": "the dock is straight ahead. use your cannons on these towers!",
     "tutorial-dock-under-cannon": "sail to the green dock to deliver your cargo!",
+    "dont-go-right": "shoot out a complete ring of bricks to quickly destroy a tower!",
+    "thread-needle": "smooth sailing! remember: fighting isn't always the answer!",
 };
 const MapBytesLoaderDef = EM.defineComponent("mapBytesLoader", () => {
     return {

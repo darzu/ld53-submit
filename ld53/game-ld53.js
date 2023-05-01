@@ -420,7 +420,7 @@ export async function initLD53(em, hosting) {
     }, "turnMast");
     EM.requireSystem("turnMast");
     const { text } = await EM.whenResources(TextDef);
-    text.lowerText = "W/S: unfurl/furl, A/D: turn, E: drop rudder";
+    text.lowerText = "W/S: unfurl/furl sail, A/D: turn, E: drop rudder";
     if (DBG_PLAYER)
         text.lowerText = "";
     // Spawn towers

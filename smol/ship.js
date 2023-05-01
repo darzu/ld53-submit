@@ -189,7 +189,7 @@ async function createRudder(em) {
     // -Math.PI / 8,
     -Math.PI / 12, 1.6, 
     // V(0, 20, 50),
-    V(0, 10, 30), true, 1, Math.PI, "W/S: unfurl/furl, A/D: turn, E: drop rudder");
+    V(0, 10, 30), true, 1, Math.PI, "W/S: unfurl/furl sail, A/D: turn, E: drop rudder");
     ent.turret.maxPitch = 0;
     ent.turret.minPitch = 0;
     ent.turret.maxYaw = Math.PI / 6;
