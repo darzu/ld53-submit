@@ -240,7 +240,7 @@ export async function setMap(em, name) {
         levelMap = parseAndMutateIntoMapData(mapBytes, name);
         mapCache.set(name, levelMap);
     }
-    res.text.helpText = MapHelp[name] || "";
+    res.text.helpText = MapHelp[name] || " ";
     // TODO(@darzu): FIX LAND SPAWN
     const texResource = res.renderer.renderer.getCyResource(LandMapTexPtr);
     texResource.queueUpdate(levelMap.land);

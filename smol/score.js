@@ -40,7 +40,6 @@ EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, CanvasDef], (es, res) => 
     }
 }, "updateScoreDisplay");
 EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async (es, res) => {
-    console.log("start");
     const ship = es[0];
     if (!ship)
         return;
@@ -113,6 +112,5 @@ EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async
             }
         }
     }
-    console.log("finish");
 }, "detectGameEnd");
 //# sourceMappingURL=score.js.map

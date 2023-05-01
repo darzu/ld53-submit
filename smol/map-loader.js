@@ -21,8 +21,8 @@ export const MapPaths = [
     // "rangetest",
 ];
 export const MapHelp = {
-    "tutorial-attack-the-towers": "the dock's straight ahead. use your cannons on these towers!",
-    "tutorial-dock-under-cannon": "sail to the dock to deliver your cargo!",
+    "tutorial-attack-the-towers": "the dock is straight ahead. use your cannons on these towers!",
+    "tutorial-dock-under-cannon": "sail to the green dock to deliver your cargo!",
 };
 const MapBytesLoaderDef = EM.defineComponent("mapBytesLoader", () => {
     return {
