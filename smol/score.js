@@ -1,0 +1,109 @@
+import { CanvasDef } from "../canvas.js";
+import { createRef } from "../em_helpers.js";
+import { EM } from "../entity-manager.js";
+import { PartyDef } from "../games/party.js";
+import { TextDef } from "../games/ui.js";
+import { ShipHealthDef } from "../ld53/ship-health.js";
+import { pointInAABB } from "../physics/aabb.js";
+import { PhysicsStateDef } from "../physics/nonintersection.js";
+import { TimeDef } from "../time.js";
+import { WoodHealthDef } from "../wood.js";
+import { setMap } from "./level-map.js";
+import { MapPaths } from "./map-loader.js";
+export const ScoreDef = EM.defineComponent("score", () => ({
+    cutPurple: 0,
+    totalPurple: 0,
+    completedLevels: 0,
+    levelNumber: 0,
+    gameEnding: false,
+    gameEndedAt: 0,
+    levelEnding: false,
+    levelEndedAt: 0,
+    victory: false,
+    endZone: createRef(0, [PhysicsStateDef]),
+    // TODO: this is very hacky
+    onLevelEnd: [],
+    onGameEnd: [],
+}));
+EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, CanvasDef], (es, res) => {
+    const ship = es[0];
+    if (!ship)
+        return;
+    if (!res.score.gameEnding && !res.score.levelEnding) {
+        if (!res.htmlCanvas.hasMouseLock()) {
+            res.text.upperText = `CLICK TO START`;
+        }
+        else {
+            res.text.upperText = `health: ${(ship.shipHealth.health * 100).toFixed(0)}`;
+        }
+    }
+}, "updateScoreDisplay");
+EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async (es, res) => {
+    const ship = es[0];
+    if (!ship)
+        return;
+    if (!res.score.endZone())
+        return;
+    if (res.score.gameEnding) {
+        if (res.time.step > res.score.gameEndedAt + 300) {
+            console.log("resetting after game end");
+            res.score.gameEnding = false;
+            if (res.score.victory) {
+                res.score.levelNumber = 0;
+                res.score.victory = false;
+            }
+            await setMap(EM, MapPaths[res.score.levelNumber]);
+            //res.score.shipHealth = 10000;
+            for (let f of res.score.onLevelEnd) {
+                await f();
+            }
+            for (let f of res.score.onGameEnd) {
+                await f();
+            }
+        }
+    }
+    else if (res.score.levelEnding) {
+        if (res.time.step > res.score.levelEndedAt + 300) {
+            res.score.levelEnding = false;
+            res.score.completedLevels++;
+            res.score.levelNumber++;
+            await setMap(EM, MapPaths[res.score.levelNumber]);
+            //res.score.shipHealth = 10000;
+            for (let f of res.score.onLevelEnd) {
+                await f();
+            }
+        }
+    }
+    else if (ship.shipHealth.health <= 0) {
+        // END GAME
+        console.log("ending game");
+        res.score.gameEnding = true;
+        res.score.gameEndedAt = res.time.step;
+        res.text.upperText = "LEVEL FAILED";
+    }
+    else if (pointInAABB(res.score.endZone()._phys.colliders[0].aabb, res.party.pos)) {
+        console.log("res.score.levelNumber: " + res.score.levelNumber);
+        console.log("MapPaths.length: " + MapPaths.length);
+        if (res.score.levelNumber + 1 >= MapPaths.length) {
+            res.score.gameEnding = true;
+            res.score.gameEndedAt = res.time.step;
+            res.score.victory = true;
+            res.text.upperText = "YOU WIN";
+        }
+        else {
+            res.score.levelEnding = true;
+            res.score.levelEndedAt = res.time.step;
+            res.text.upperText = "LEVEL COMPLETE";
+        }
+        // splinter the dock
+        const dock = res.score.endZone();
+        if (WoodHealthDef.isOn(dock)) {
+            for (let b of dock.woodHealth.boards) {
+                for (let s of b) {
+                    s.health = 0;
+                }
+            }
+        }
+    }
+}, "detectGameEnd");
+//# sourceMappingURL=score.js.map
