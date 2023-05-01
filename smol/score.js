@@ -24,6 +24,7 @@ export const ScoreDef = EM.defineComponent("score", () => ({
     // TODO: this is very hacky
     onLevelEnd: [],
     onGameEnd: [],
+    skipFrame: false,
 }));
 EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, CanvasDef], (es, res) => {
     const ship = es[0];
@@ -39,15 +40,19 @@ EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, CanvasDef], (es, res) => 
     }
 }, "updateScoreDisplay");
 EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async (es, res) => {
+    console.log("start");
     const ship = es[0];
     if (!ship)
         return;
     if (!res.score.endZone())
         return;
+    if (res.score.skipFrame) {
+        res.score.skipFrame = false;
+        return;
+    }
     if (res.score.gameEnding) {
         if (res.time.step > res.score.gameEndedAt + 300) {
             console.log("resetting after game end");
-            res.score.gameEnding = false;
             if (res.score.victory) {
                 res.score.levelNumber = 0;
                 res.score.victory = false;
@@ -60,11 +65,12 @@ EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async
             for (let f of res.score.onGameEnd) {
                 await f();
             }
+            res.score.gameEnding = false;
+            res.score.skipFrame = true;
         }
     }
     else if (res.score.levelEnding) {
         if (res.time.step > res.score.levelEndedAt + 300) {
-            res.score.levelEnding = false;
             res.score.completedLevels++;
             res.score.levelNumber++;
             await setMap(EM, MapPaths[res.score.levelNumber]);
@@ -72,6 +78,8 @@ EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async
             for (let f of res.score.onLevelEnd) {
                 await f();
             }
+            res.score.levelEnding = false;
+            res.score.skipFrame = true;
         }
     }
     else if (ship.shipHealth.health <= 0) {
@@ -105,5 +113,6 @@ EM.registerSystem([ShipHealthDef], [ScoreDef, TextDef, TimeDef, PartyDef], async
             }
         }
     }
+    console.log("finish");
 }, "detectGameEnd");
 //# sourceMappingURL=score.js.map

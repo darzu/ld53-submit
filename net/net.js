@@ -13,21 +13,6 @@ const SEND_DELAY_JITTER = 50.0;
 // weight of existing skew measurement vs. new skew measurement
 const SKEW_WEIGHT = 0.5;
 class Net {
-    constructor(peerName) {
-        this.skewEstimate = {};
-        this.pingEstimate = {};
-        this.outgoingEvents = [];
-        this.peers = [];
-        this.channels = {};
-        this.pingSeq = 0;
-        this.pingTime = 0;
-        this.peer = new Peer(peerName);
-        this.peer.onopen = (address) => {
-            this.outgoingEvents.push({ type: NetworkEventType.Ready, address });
-            this.awaitConnections();
-            setInterval(() => this.ping(), PING_INTERVAL);
-        };
-    }
     processEvents(queue) {
         while (queue.length > 0) {
             const event = queue.shift();
@@ -42,6 +27,21 @@ class Net {
                     never(event, `Bad network event type ${event.type}`);
             }
         }
+    }
+    constructor(peerName) {
+        this.skewEstimate = {};
+        this.pingEstimate = {};
+        this.outgoingEvents = [];
+        this.peers = [];
+        this.channels = {};
+        this.pingSeq = 0;
+        this.pingTime = 0;
+        this.peer = new Peer(peerName);
+        this.peer.onopen = (address) => {
+            this.outgoingEvents.push({ type: NetworkEventType.Ready, address });
+            this.awaitConnections();
+            setInterval(() => this.ping(), PING_INTERVAL);
+        };
     }
     ping() {
         this.pingSeq++;

@@ -9,7 +9,7 @@ import { InputsDef } from "../inputs.js";
 import { AudioDef, randChordId } from "../audio.js";
 import { createAABB, copyAABB, aabbCenter, getHalfsizeFromAABB, } from "../physics/aabb.js";
 import { ColliderDef } from "../physics/collider.js";
-import { AngularVelocityDef, LinearVelocityDef } from "../physics/motion.js";
+import { LinearVelocityDef } from "../physics/motion.js";
 import { PhysicsResultsDef, WorldFrameDef, } from "../physics/nonintersection.js";
 import { PhysicsParentDef, PositionDef, RotationDef, ScaleDef, } from "../physics/transform.js";
 import { PointLightDef } from "../render/lights.js";
@@ -22,7 +22,7 @@ import { RendererDef, RenderableConstructDef, RenderableDef, } from "../render/r
 import { tempVec3 } from "../temp-pool.js";
 import { assert } from "../util.js";
 import { TimeDef } from "../time.js";
-import { createWoodHealth, resetWoodHealth, resetWoodState, SplinterParticleDef, WoodHealthDef, WoodStateDef, } from "../wood.js";
+import { createWoodHealth, resetWoodHealth, resetWoodState, WoodHealthDef, WoodStateDef, } from "../wood.js";
 import { AssetsDef } from "../assets.js";
 import { breakBullet, BulletConstructDef, BulletDef, fireBullet, } from "./bullet.js";
 import { ControllableDef } from "./controllable.js";
@@ -34,10 +34,10 @@ import { TextDef } from "./ui.js";
 import { createIdxPool } from "../idx-pool.js";
 import { createHomeShip } from "./shipyard.js";
 import { gameplaySystems } from "./ghost.js";
-import { RenderDataStdDef } from "../render/pipelines/std-scene.js";
 import { deferredPipeline } from "../render/pipelines/std-deferred.js";
 import { pirateKills, pirateNextSpawn, pirateSpawnTimer, startPirates, } from "./pirate.js";
 import { ParametricDef } from "./parametric-motion.js";
+import { addGizmoChild } from "../utils-game.js";
 /*
   Game mechanics:
   [ ] Planks can be repaired
@@ -80,6 +80,7 @@ import { ParametricDef } from "./parametric-motion.js";
   [ ] add dark/fog ends
 */
 const DBG_PLAYER = true;
+const DISABLE_PRIATES = true;
 let healthPercent = 100;
 const MAX_GOODBALLS = 10;
 export const LD51CannonDef = EM.defineComponent("ld51Cannon", () => {
@@ -111,7 +112,7 @@ export async function initRogueGame(em, hosting) {
     // if (RenderableDef.isOn(c)) c.renderable.enabled = false;
     const ground = em.new();
     const groundMesh = cloneMesh(res.assets.hex.mesh);
-    transformMesh(groundMesh, mat4.fromRotationTranslationScale(quat.IDENTITY, [0, -2, 0], [20, 2, 20]));
+    transformMesh(groundMesh, mat4.fromRotationTranslationScale(quat.IDENTITY, [0, -4, 0], [20, 2, 20]));
     em.ensureComponentOn(ground, RenderableConstructDef, groundMesh);
     em.ensureComponentOn(ground, ColorDef, ENDESGA16.blue);
     // em.ensureComponentOn(p, ColorDef, [0.2, 0.3, 0.2]);
@@ -172,8 +173,8 @@ export async function initRogueGame(em, hosting) {
     // const timberPos = vec3.clone(res.assets.timber_rib.center);
     // vec3.negate(timberPos, timberPos);
     // vec3.scale(timberPos, timberPos, scale);
-    timberPos[1] += 1;
-    timberPos[0] -= ribCount * 0.5 * ribSpace;
+    // timberPos[1] += 1;
+    // timberPos[0] -= ribCount * 0.5 * ribSpace;
     // timberPos[2] -= floorPlankCount * 0.5 * floorSpace;
     em.ensureComponentOn(timber, PositionDef, timberPos);
     // em.ensureComponentOn(timber, PositionDef, [0, 0, -4]);
@@ -187,6 +188,7 @@ export async function initRogueGame(em, hosting) {
     });
     const timberHealth = createWoodHealth(timberState);
     em.ensureComponentOn(timber, WoodHealthDef, timberHealth);
+    addGizmoChild(timber, 10);
     // CANNONS
     const realCeilHeight = ceilHeight + timberPos[1];
     const realFloorHeight = timberPos[1] + floorHeight;
@@ -286,16 +288,24 @@ export async function initRogueGame(em, hosting) {
                 res.inputs.lclick /* && c.cannonLocal.fireMs <= 0*/) {
                 const ballHealth = 2.0;
                 let bulletAxis = V(0, 0, -1);
+                // let bulletAxis = V(1, 0, 0);
                 vec3.transformQuat(bulletAxis, c.world.rotation, bulletAxis);
                 vec3.normalize(bulletAxis, bulletAxis);
                 const bulletPos = vec3.clone(c.world.position);
                 vec3.scale(bulletAxis, 2, bulletAxis);
                 vec3.add(bulletPos, bulletAxis, bulletPos);
-                fireBullet(em, 1, bulletPos, c.world.rotation, 0.05, 0.02, 
+                // const bulletRot = quat.rotateY(
+                //   c.world.rotation,
+                //   Math.PI / 2,
+                //   quat.tmp()
+                // );
+                fireBullet(em, 1, bulletPos, 
+                // bulletRot,
+                c.world.rotation, 0.05, 0.02, 
                 // gravity:
                 // 3, (non-parametric)
                 1.5 * 0.00001, // parametric
-                ballHealth);
+                ballHealth, bulletAxis);
                 // remove player ball
                 const heldBall = EM.findEntity(player.player.holdingBall, [
                     GoodBallDef,
@@ -311,31 +321,6 @@ export async function initRogueGame(em, hosting) {
         }
     }, "ld51PlayerFireCannon");
     EM.requireGameplaySystem("ld51PlayerFireCannon");
-    const splinterObjId = 7654;
-    em.registerSystem([
-        SplinterParticleDef,
-        LinearVelocityDef,
-        AngularVelocityDef,
-        GravityDef,
-        PositionDef,
-        RotationDef,
-        RenderDataStdDef,
-    ], [], (splinters, res) => {
-        for (let s of splinters) {
-            if (s.position[1] <= 0) {
-                // TODO(@darzu): zero these instead of remove?
-                em.removeComponent(s.id, LinearVelocityDef);
-                em.removeComponent(s.id, GravityDef);
-                em.removeComponent(s.id, AngularVelocityDef);
-                s.position[1] = 0;
-                quat.identity(s.rotation);
-                quat.rotateX(s.rotation, Math.PI * 0.5, s.rotation);
-                quat.rotateZ(s.rotation, Math.PI * Math.random(), s.rotation);
-                s.renderDataStd.id = splinterObjId; // stops z-fighting
-                // console.log("freeze!");
-            }
-        }
-    }, "splintersOnFloor");
     EM.requireGameplaySystem("splintersOnFloor");
     // const quadIdsNeedReset = new Set<number>();
     // assert(_player?.collider.shape === "AABB");
@@ -368,7 +353,7 @@ export async function initRogueGame(em, hosting) {
             const fireDir = quat.create();
             quat.copy(fireDir, ghost.world.rotation);
             const ballHealth = 2.0;
-            fireBullet(em, 1, firePos, fireDir, 0.05, 0.02, 3 * 0.00001, ballHealth);
+            fireBullet(em, 1, firePos, fireDir, 0.05, 0.02, 3 * 0.00001, ballHealth, [0, 0, -1]);
         }
         if (inputs.keyClicks["r"]) {
             const timber2 = await em.whenEntityHas(timber, RenderableDef);
@@ -566,18 +551,18 @@ export async function initRogueGame(em, hosting) {
             }
         }, "deadBullets");
         EM.requireGameplaySystem("deadBullets");
-        // starter ammo
-        {
-            assert(colFloor.collider.shape === "AABB");
-            for (let i = 0; i < 3; i++) {
-                const pos = vec3.clone([
-                    colFloor.collider.aabb.max[0] - 2,
-                    colFloor.collider.aabb.max[1] + 2,
-                    colFloor.collider.aabb.max[2] - 2 * i - 3,
-                ]);
-                spawnGoodBall(pos);
-            }
-        }
+        // // starter ammo
+        // {
+        //   assert(colFloor.collider.shape === "AABB");
+        //   for (let i = 0; i < 3; i++) {
+        //     const pos: vec3 = vec3.clone([
+        //       colFloor.collider.aabb.max[0] - 2,
+        //       colFloor.collider.aabb.max[1] + 2,
+        //       colFloor.collider.aabb.max[2] - 2 * i - 3,
+        //     ]);
+        //     spawnGoodBall(pos);
+        //   }
+        // }
         em.registerSystem([GoodBallDef, PositionDef, GravityDef, LinearVelocityDef], [], (es, res) => {
             // TODO(@darzu):
             for (let ball of es) {
@@ -633,11 +618,36 @@ export async function initRogueGame(em, hosting) {
                 solid: false,
                 aabb: res.assets.ball.aabb,
             });
-            vec3.copy(g.position, [-28.11, 26.0, -28.39]);
-            quat.copy(g.rotation, [0.0, -0.94, 0.0, 0.34]);
+            // vec3.copy(g.position, [-28.11, 26.0, -28.39]);
+            // quat.copy(g.rotation, [0.0, -0.94, 0.0, 0.34]);
+            // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+            // g.cameraFollow.yawOffset = 0.0;
+            // g.cameraFollow.pitchOffset = -0.593;
+            // vec3.copy(g.position, [-3.61, 23.22, 36.56]);
+            // quat.copy(g.rotation, [0.0, -0.11, 0.0, 0.99]);
+            // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+            // g.cameraFollow.yawOffset = 0.0;
+            // g.cameraFollow.pitchOffset = -0.378;
+            // vec3.copy(g.position, [-4.19, 39.19, 4.41]);
+            // quat.copy(g.rotation, [0.0, -0.01, 0.0, 1.0]);
+            // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+            // g.cameraFollow.yawOffset = 0.0;
+            // g.cameraFollow.pitchOffset = -1.439;
+            // vec3.copy(g.position, [21.62, 11.55, 15.21]);
+            // quat.copy(g.rotation, [0.0, 0.21, 0.0, 0.98]);
+            // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+            // g.cameraFollow.yawOffset = 0.0;
+            // g.cameraFollow.pitchOffset = -0.079;
+            // vec3.copy(g.position, [-33.52, 15.72, 11.85]);
+            // quat.copy(g.rotation, [0.0, -0.43, 0.0, 0.91]);
+            // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+            // g.cameraFollow.yawOffset = 0.0;
+            // g.cameraFollow.pitchOffset = -0.336;
+            vec3.copy(g.position, [-11.36, 27.53, -3.66]);
+            quat.copy(g.rotation, [0.0, -0.93, 0.0, 0.39]);
             vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
             g.cameraFollow.yawOffset = 0.0;
-            g.cameraFollow.pitchOffset = -0.593;
+            g.cameraFollow.pitchOffset = -1.233;
         }
         if (!DBG_PLAYER) {
             const _player = createPlayer(em);
@@ -665,7 +675,8 @@ export async function initRogueGame(em, hosting) {
             });
         }
     }
-    startPirates();
+    if (!DISABLE_PRIATES)
+        startPirates();
     const startHealth = getCurrentHealth();
     {
         em.registerSystem([], [InputsDef, TextDef, TimeDef, AudioDef], (es, res) => {
@@ -688,7 +699,11 @@ export async function initRogueGame(em, hosting) {
                 res.text.lowerText = `WASD+Shift; left click to pick up cannon balls and fire the cannons. Survive! They attack like clockwork.`;
             }
             if (healthPercent < 20) {
-                alert(`You've been sunk! You killed ${pirateKills} and lasted ${(res.time.time / 1000).toFixed(1)} seconds. Thanks for playing! Refresh to try again.`);
+                // alert(
+                //   `You've been sunk! You killed ${pirateKills} and lasted ${(
+                //     res.time.time / 1000
+                //   ).toFixed(1)} seconds. Thanks for playing! Refresh to try again.`
+                // );
                 gameplaySystems.length = 0;
             }
         }, "progressGame");
