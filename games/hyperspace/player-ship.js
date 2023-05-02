@@ -239,7 +239,7 @@ export function registerShipSystems(em) {
         const part = ship.playerShipLocal.parts[partIdx]();
         part.renderable.enabled = false;
         part.shipPart.damaged = true;
-        music.playChords([2, 3], "minor", 0.2, 5.0, -2);
+        //music.playChords([2, 3], "minor", 0.2, 5.0, -2);
     }, {
         legalEvent: ([ship], partIdx) => !!ship.playerShipLocal.parts[partIdx](),
         serializeExtra: (buf, o) => buf.writeUint8(o),

@@ -17,11 +17,13 @@ const NUM_STRINGS = 300;
 // create web audio api context
 // TODO(@darzu): rename to .audio
 export const AudioDef = EM.defineComponent("music", createAudioResource);
+export const HasAudioDef = EM.defineComponent("hasAudio", () => true);
 export function registerMusicSystems(em) {
     em.addResource(AudioDef);
     let once = true;
     em.registerSystem(null, [AudioDef, CanvasDef], (_, res) => {
         if (once && res.htmlCanvas.hasFirstInteraction) {
+            em.addResource(HasAudioDef);
             // Init our audio
             // TODO(@darzu): maybe we shouldn't even create the resource until we
             //    have the audio context?
@@ -83,8 +85,21 @@ function createAudioResource() {
     let res = {
         state: undefined,
         playChords,
+        playSound,
     };
     return res;
+    function playSound(sound, volume = 1) {
+        if (!res.state)
+            return;
+        const ctx = res.state.ctx;
+        const source = ctx.createBufferSource();
+        source.buffer = sound;
+        var gainNode = ctx.createGain();
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        gainNode.gain.value = volume;
+        source.start();
+    }
     function playFreq(freq, durSec, offset) {
         if (!res.state)
             return;

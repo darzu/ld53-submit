@@ -12,11 +12,12 @@ import { InRangeDef } from "./interact.js";
 import { LocalPlayerDef, PlayerDef } from "./player.js";
 import { AssetsDef } from "../assets.js";
 import { WorldFrameDef } from "../physics/nonintersection.js";
-import { AudioDef, randChordId } from "../audio.js";
+import { AudioDef } from "../audio.js";
 import { InputsDef } from "../inputs.js";
 import { DeletedDef } from "../delete.js";
 import { defineNetEntityHelper } from "../em_helpers.js";
 import { constructNetTurret, TurretDef } from "./turret.js";
+import { SoundSetDef } from "../ld53/sound-loader.js";
 export const { CannonPropsDef, CannonLocalDef, createCannon, createCannonNow } = defineNetEntityHelper(EM, {
     name: "cannon",
     defaultProps: (loc, yaw, pitch, parentId) => {
@@ -90,8 +91,11 @@ export function registerCannonSystems(em) {
         }
         // but everyone resets the cooldown and plays sound effects
         cannon.cannonLocal.fireMs = cannon.cannonLocal.fireDelayMs;
-        const chord = randChordId();
-        EM.getResource(AudioDef).playChords([chord], "major", 2.0, 3.0, -2);
+        EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+            res.music.playSound(res.soundSet.cannonS, 0.2);
+        });
+        //const chord = randChordId();
+        //EM.getResource(AudioDef)!.playChords([chord], "major", 2.0, 3.0, -2);
     }, {
         legalEvent: ([player, cannon]) => {
             return cannon.cannonLocal.fireMs <= 0;

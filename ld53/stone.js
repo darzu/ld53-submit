@@ -1,4 +1,5 @@
 import { AssetsDef } from "../assets.js";
+import { AudioDef } from "../audio.js";
 import { ColorDef } from "../color-ecs.js";
 import { ENDESGA16 } from "../color/palettes.js";
 import { DeadDef } from "../delete.js";
@@ -19,6 +20,7 @@ import { RenderableConstructDef, RenderableDef, RendererDef, } from "../render/r
 import { mat4, V, vec3, quat } from "../sprig-matrix.js";
 import { TimeDef } from "../time.js";
 import { assert } from "../util.js";
+import { SoundSetDef } from "./sound-loader.js";
 const GRAVITY = 6.0 * 0.00001;
 const MIN_BRICK_PERCENT = 0.6;
 export const StoneTowerDef = EM.defineComponent("stoneTower", (cannon, fireRate = 1500, projectileSpeed = 0.2, firingRadius = Math.PI / 8) => ({
@@ -568,6 +570,9 @@ EM.registerSystem([StoneTowerDef, WorldFrameDef], [TimeDef, PartyDef], (es, res)
         const b = fireBullet(EM, 2, tower.stoneTower.cannon().world.position, worldRot, v, 0.02, g, 
         // 2.0,
         20.0, [1, 0, 0]);
+        EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+            res.music.playSound(res.soundSet.cannonL, 0.2);
+        });
         b.then((b) => {
             if (missed) {
                 //vec3.set(0.8, 0.2, 0.2, b.color);
