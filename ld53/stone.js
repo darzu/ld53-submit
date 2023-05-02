@@ -440,7 +440,7 @@ EM.registerSystem([StoneTowerDef, WorldFrameDef], [TimeDef, PartyDef], (es, res)
         return;
     for (let tower of es) {
         if (!tower.stoneTower.alive)
-            return;
+            continue;
         const invertedTransform = mat4.invert(tower.world.transform);
         const towerSpacePos = vec3.transformMat4(res.party.pos, invertedTransform);
         const prevTowerSpacePos = vec3.transformMat4(__previousPartyPos, invertedTransform);
@@ -631,7 +631,7 @@ EM.registerSystem([StoneTowerDef, RenderableDef, WorldFrameDef], [PhysicsResults
             }
             if (totalKnockedOut) {
                 EM.whenResources(AudioDef, SoundSetDef).then((res) => {
-                    res.music.playSound("stonebreak", res.soundSet["stonebreak.wav"], 0.5);
+                    res.music.playSound("stonebreak", res.soundSet["stonebreak.wav"], 0.1);
                 });
                 tower.stoneTower.currentBricks -= totalKnockedOut;
                 if (tower.stoneTower.currentBricks / tower.stoneTower.totalBricks <
