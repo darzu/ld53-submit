@@ -18,6 +18,8 @@ export const MapPaths = [
     "dont-go-right",
     "thread-needle",
     "every-which-way",
+    "tacking",
+    // "surprise", two wind blobs
     // "rangetest",
 ];
 export const MapHelp = {

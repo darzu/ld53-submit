@@ -571,7 +571,7 @@ EM.registerSystem([StoneTowerDef, WorldFrameDef], [TimeDef, PartyDef], (es, res)
         // 2.0,
         20.0, [1, 0, 0]);
         EM.whenResources(AudioDef, SoundSetDef).then((res) => {
-            res.music.playSound(res.soundSet.cannonL, 0.2);
+            res.music.playSound("cannonL", res.soundSet["cannonL.mp3"], 0.1);
         });
         b.then((b) => {
             if (missed) {
@@ -630,6 +630,9 @@ EM.registerSystem([StoneTowerDef, RenderableDef, WorldFrameDef], [PhysicsResults
                 totalKnockedOut += knockOutBricksByBullet(tower, ballAABB, ball.bullet);
             }
             if (totalKnockedOut) {
+                EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+                    res.music.playSound("stonebreak", res.soundSet["stonebreak.wav"], 0.5);
+                });
                 tower.stoneTower.currentBricks -= totalKnockedOut;
                 if (tower.stoneTower.currentBricks / tower.stoneTower.totalBricks <
                     MIN_BRICK_PERCENT) {

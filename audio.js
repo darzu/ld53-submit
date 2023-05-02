@@ -81,6 +81,7 @@ function createAudioState() {
         };
     }
 }
+let __lastPlay = new Map();
 function createAudioResource() {
     let res = {
         state: undefined,
@@ -88,12 +89,18 @@ function createAudioResource() {
         playSound,
     };
     return res;
-    function playSound(sound, volume = 1) {
+    function playSound(name, sound, volume = 1) {
         if (!res.state)
             return;
+        const now = new Date().getTime();
+        if (__lastPlay.has(name) && now - __lastPlay.get(name) < 500) {
+            return;
+        }
+        __lastPlay.set(name, now);
         const ctx = res.state.ctx;
         const source = ctx.createBufferSource();
         source.buffer = sound;
+        //source.playbackRate.setValueAtTime(2.0, 0.0);
         var gainNode = ctx.createGain();
         source.connect(gainNode);
         gainNode.connect(ctx.destination);

@@ -3,7 +3,12 @@ import { EM } from "../entity-manager.js";
 import { onInit } from "../init.js";
 import { assert } from "../util.js";
 const DEFAULT_SOUND_PATH = "assets/sounds/";
-export const SoundPaths = ["cannonS", "cannonL"];
+export const SoundPaths = [
+    "cannonS.mp3",
+    "cannonL.mp3",
+    "stonebreak.wav",
+    "woodbreak.mp3",
+];
 const SoundLoaderDef = EM.defineComponent("soundLoader", () => {
     return {
         promise: null,
@@ -14,7 +19,7 @@ async function loadSoundsData() {
     console.log("loading sound data");
     // TODO(@darzu): PERF. Load on demand instead of all at once
     const soundPromises = SoundPaths.map(async (name) => {
-        const path = `${DEFAULT_SOUND_PATH}${name}.mp3`;
+        const path = `${DEFAULT_SOUND_PATH}${name}`;
         // return getBytes(path);
         // Decode asynchronously
         return new Promise((resolve, _) => {
