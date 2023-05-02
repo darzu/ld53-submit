@@ -19,7 +19,7 @@ export const MapPaths = [
     "thread-needle",
     "every-which-way",
     "tacking",
-    // "surprise", two wind blobs
+    "surprise",
     // "rangetest",
 ];
 export const MapHelp = {
